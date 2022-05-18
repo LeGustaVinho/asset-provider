@@ -23,22 +23,22 @@ namespace LegendaryTools.Systems.AssetProvider
         public void ClearLoadedAssetRef();
     }
     
-    public interface IAssetLoaderConfig<T, W> : IAssetLoaderConfig
-        where T : UnityEngine.Object
+    public interface IAssetLoaderConfig<TAsset, TAssetRef> : IAssetLoaderConfig
+        where TAsset : UnityEngine.Object
     {
-        new W AssetReference { get; }
-        new T LoadedAsset { get; }
-        void SetAsSceneAsset(T sceneInstanceInScene);
+        new TAssetRef AssetReference { get; }
+        new TAsset LoadedAsset { get; }
+        void SetAsSceneAsset(TAsset sceneInstanceInScene);
     }
 
     [Serializable]
-    public class AssetLoadable<T, W> : IAssetLoaderConfig<T, W>
-        where T: UnityEngine.Object
+    public class AssetLoadable<TAsset, TAssetRef> : IAssetLoaderConfig<TAsset, TAssetRef>
+        where TAsset: UnityEngine.Object
     {
         [SerializeField] private bool _preload;
         [SerializeField] private bool _dontUnloadAfterLoad;
         [SerializeField] private AssetProvider _loadingStrategy;
-        [SerializeField] private W _assetReference;
+        [SerializeField] private TAssetRef _assetReference;
         
         public bool PreLoad
         {
@@ -60,17 +60,17 @@ namespace LegendaryTools.Systems.AssetProvider
         object IAssetLoaderConfig.AssetReference => AssetReference;
         Object IAssetLoaderConfig.LoadedAsset => LoadedAsset;
         
-        public W AssetReference => _assetReference;
+        public TAssetRef AssetReference => _assetReference;
 
         public bool IsInScene { private set; get; } //Flag used to identify that this asset does not need load/unload because it is serialized in the scene
 
-        public T LoadedAsset => loadedAsset;
+        public TAsset LoadedAsset => loadedAsset;
 
         public bool IsLoaded => loadedAsset != null;
 
         public bool IsLoading { private set; get; }
 
-        private T loadedAsset;
+        private TAsset loadedAsset;
 
         public IEnumerator Load()
         {
@@ -82,7 +82,7 @@ namespace LegendaryTools.Systems.AssetProvider
             if (LoadingStrategy != null)
             {
                 IsLoading = true;
-                yield return LoadingStrategy.LoadAsync<T>(AssetReference, OnLoadAssetAsync);
+                yield return LoadingStrategy.LoadAsync<TAsset>(AssetReference, OnLoadAssetAsync);
             }
             else
             {
@@ -103,10 +103,10 @@ namespace LegendaryTools.Systems.AssetProvider
 
         public void SetAsSceneAsset(Object sceneInstanceInScene)
         {
-            SetAsSceneAsset(sceneInstanceInScene as T);
+            SetAsSceneAsset(sceneInstanceInScene as TAsset);
         }
 
-        public void SetAsSceneAsset(T sceneInstanceInScene)
+        public void SetAsSceneAsset(TAsset sceneInstanceInScene)
         {
             IsInScene = sceneInstanceInScene != null;
             loadedAsset = sceneInstanceInScene;
@@ -117,7 +117,7 @@ namespace LegendaryTools.Systems.AssetProvider
             loadedAsset = null;
         }
         
-        private void OnLoadAssetAsync(T screenBase)
+        private void OnLoadAssetAsync(TAsset screenBase)
         {
             loadedAsset = screenBase;
             IsLoading = false;
