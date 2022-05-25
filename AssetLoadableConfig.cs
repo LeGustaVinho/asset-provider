@@ -7,11 +7,11 @@ namespace LegendaryTools.Systems.AssetProvider
 {
     public interface IAssetLoaderConfig
     {
-        public bool PreLoad { get; set; }
-        public bool DontUnloadAfterLoad { get; set; }
+        bool PreLoad { get; set; }
+        bool DontUnloadAfterLoad { get; set; }
 
-        public AssetProvider LoadingStrategy { get; set; }
-        public object AssetReference { get; }
+        AssetProvider LoadingStrategy { get; set; }
+        object AssetReference { get; }
         
         bool IsInScene { get; } //Flag used to identify that this asset does not need load/unload because it is serialized in the scene
         UnityEngine.Object LoadedAsset { get; }
@@ -20,7 +20,7 @@ namespace LegendaryTools.Systems.AssetProvider
         IEnumerator Load();
         void Unload();
         void SetAsSceneAsset(UnityEngine.Object sceneInstanceInScene);
-        public void ClearLoadedAssetRef();
+        void ClearLoadedAssetRef();
     }
     
     public interface IAssetLoaderConfig<TAsset, TAssetRef> : IAssetLoaderConfig
