@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Threading.Tasks;
 using UnityEngine;
 
 namespace LegendaryTools.Systems.AssetProvider
@@ -18,7 +19,7 @@ namespace LegendaryTools.Systems.AssetProvider
             return null;
         }
 
-        public override IEnumerator LoadAsync<T>(object arg, Action<T> onComplete)
+        public override async Task<T> LoadAsync<T>(object arg, Action<T> onComplete)
         {
             string path = (string)arg;
             if (path.Length > 0)
@@ -27,11 +28,15 @@ namespace LegendaryTools.Systems.AssetProvider
 
                 while (!resourcesRequest.isDone)
                 {
-                    yield return null;
+                    await Task.Delay(25);
                 }
 
-                onComplete.Invoke(resourcesRequest.asset as T);
+                var result = resourcesRequest.asset as T;
+                onComplete.Invoke(result);
+                return result;
             }
+
+            return null;
         }
 
         public override void Unload<T>(ref T instance)

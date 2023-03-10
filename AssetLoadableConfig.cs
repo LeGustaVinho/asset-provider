@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Threading.Tasks;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
@@ -17,7 +18,7 @@ namespace LegendaryTools.Systems.AssetProvider
         UnityEngine.Object LoadedAsset { get; }
         bool IsLoaded { get; }
         bool IsLoading { get; }
-        IEnumerator Load();
+        Task<Object> Load();
         void Unload();
         void SetAsSceneAsset(UnityEngine.Object sceneInstanceInScene);
         void ClearLoadedAssetRef();
@@ -72,21 +73,22 @@ namespace LegendaryTools.Systems.AssetProvider
 
         private TAsset loadedAsset;
 
-        public IEnumerator Load()
+        public async Task<Object> Load()
         {
             if (IsInScene)
             {
-                yield break;
+                return null;
             }
 
             if (LoadingStrategy != null)
             {
                 IsLoading = true;
-                yield return LoadingStrategy.LoadAsync<TAsset>(AssetReference, OnLoadAssetAsync);
+                return await LoadingStrategy.LoadAsync<TAsset>(AssetReference, OnLoadAssetAsync);
             }
             else
             {
                 Debug.LogError("[AssetLoaderConfig:Load] -> LoadingStrategy is null");
+                return null;
             }
         }
         
