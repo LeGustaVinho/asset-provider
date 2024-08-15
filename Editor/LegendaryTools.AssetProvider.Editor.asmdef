@@ -1,13 +1,12 @@
 {
-    "name": "AssetProvider",
+    "name": "LegendaryTools.AssetProvider.Editor",
     "rootNamespace": "",
     "references": [
-        "GUID:24044e8960e64a144b7a05351e2cc6ea",
-        "GUID:d962d0b942a7fff4092f4dbd41f1907f",
-        "GUID:9e24947de15b9834991c9d8411ea37cf",
-        "GUID:84651a3751eca9349aac36a66bba901b"
+        "GUID:c8f3a7f7e15145c4280496af91e176e1"
     ],
-    "includePlatforms": [],
+    "includePlatforms": [
+        "Editor"
+    ],
     "excludePlatforms": [],
     "allowUnsafeCode": false,
     "overrideReferences": false,
