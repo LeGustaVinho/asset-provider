@@ -136,11 +136,7 @@ namespace LegendaryTools.Systems.AssetProvider
             if (LoadingStrategy != null)
             {
                 IsLoading = true;
-                handle = LoadingStrategy.LoadWithCoroutines<T>(AssetReference, (arg) =>
-                {
-                    OnLoadAssetAsync(arg);
-                    onComplete?.Invoke(arg);
-                });
+                handle = LoadingStrategy.LoadWithCoroutines<T>(AssetReference, DualCallback);
                 return handle;
             }
 

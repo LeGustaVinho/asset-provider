@@ -10,9 +10,7 @@ namespace LegendaryTools.Systems.AssetProvider
         bool IsDone { get; }
         object Result { get; }
         float Progress { get; }
-
         event Action<object> OnCompleted;
-
         void Release();
     }
 
@@ -109,7 +107,7 @@ namespace LegendaryTools.Systems.AssetProvider
                         Resources.UnloadUnusedAssets();
                     else
                         Resources.UnloadAsset(resourceOperation.asset); 
-                break;
+                    break;
             }
         }
 
