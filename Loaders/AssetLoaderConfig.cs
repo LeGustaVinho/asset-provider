@@ -6,12 +6,10 @@ using Object = UnityEngine.Object;
 
 namespace LegendaryTools.Systems.AssetProvider
 {
-    public class AssetLoaderConfig : ScriptableObject, IAssetLoaderConfig
+    public abstract class AssetLoaderConfig : ScriptableObject, IAssetLoaderConfig, IAssetProvider
     {
         [SerializeField] protected bool preload;
         [SerializeField] protected bool dontUnloadAfterLoad;
-        [SerializeField] protected AssetProvider loadingStrategy;
-        [SerializeField] protected string assetPath;
         
         public virtual bool PreLoad
         {
@@ -23,14 +21,8 @@ namespace LegendaryTools.Systems.AssetProvider
             get => dontUnloadAfterLoad;
             set => dontUnloadAfterLoad = value;
         }
-
-        public AssetProvider LoadingStrategy
-        {
-            get => loadingStrategy;
-            set => loadingStrategy = value;
-        }
         
-        public virtual string AssetReference => assetPath;
+        public abstract string AssetReference { get; }
         public virtual object LoadedAsset => loadedAsset;
 
         public virtual bool IsInScene { private set; get; } //Flag used to identify that this asset does not need load/unload because it is serialized in the scene
@@ -49,16 +41,8 @@ namespace LegendaryTools.Systems.AssetProvider
                 return loadedAsset as T;
             }
 
-            if (LoadingStrategy != null)
-            {
-                IsLoading = true;
-                return LoadingStrategy.Load<T>(AssetReference);
-            }
-            else
-            {
-                Debug.LogError("[AssetLoaderConfig:Load] -> LoadingStrategy is null");
-                return null;
-            }
+            IsLoading = true;
+            return Load<T>(AssetReference);
         }
 
         public async Task<ILoadOperation> LoadAsync<T>(Action<object> onComplete = null)
@@ -75,16 +59,11 @@ namespace LegendaryTools.Systems.AssetProvider
                 DualCallback(loadedAsset);
             }
 
-            if (LoadingStrategy != null)
-            {
-                IsLoading = true;
-                Task<ILoadOperation> handleTask = LoadingStrategy.LoadAsync<T>(AssetReference, DualCallback);
-                handle = handleTask.Result;
-                return await handleTask;
-            }
 
-            Debug.LogError("[AssetLoaderConfig:Load] -> LoadingStrategy is null");
-            return null;
+            IsLoading = true;
+            Task<ILoadOperation> handleTask = LoadAsync<T>(AssetReference, DualCallback);
+            handle = handleTask.Result;
+            return await handleTask;
         }
 
         public ILoadOperation PrepareLoadRoutine<T>(Action<object> onComplete = null)
@@ -99,25 +78,17 @@ namespace LegendaryTools.Systems.AssetProvider
             if (IsInScene || IsLoaded)
             {
                 DualCallback(loadedAsset);
+                return null;
             }
 
-            if (LoadingStrategy != null)
-            {
-                IsLoading = true;
-                handle = LoadingStrategy.PrepareLoadRoutine<T>(AssetReference, DualCallback);
-                return handle;
-            }
-
-            Debug.LogError("[AssetLoaderConfig:Load] -> LoadingStrategy is null");
-            return null;
+            IsLoading = true;
+            handle = PrepareLoadRoutine<T>(AssetReference, DualCallback);
+            return handle;
         }
 
         public IEnumerator WaitLoadRoutine()
         {
-            if (LoadingStrategy != null)
-            {
-                yield return LoadingStrategy.WaitLoadRoutine(handle);
-            }
+            yield return WaitLoadRoutine(handle);
         }
 
         public ILoadOperation LoadWithCoroutines<T>(Action<object> onComplete) where T : UnityEngine.Object
@@ -131,26 +102,21 @@ namespace LegendaryTools.Systems.AssetProvider
             if (IsInScene || IsLoaded)
             {
                 DualCallback(loadedAsset);
+                return null;
             }
-
-            if (LoadingStrategy != null)
-            {
-                IsLoading = true;
-                handle = LoadingStrategy.LoadWithCoroutines<T>(AssetReference, DualCallback);
-                return handle;
-            }
-
-            Debug.LogError("[AssetLoaderConfig:Load] -> LoadingStrategy is null");
-            return null;
+            
+            IsLoading = true;
+            handle = LoadWithCoroutines<T>(AssetReference, DualCallback);
+            return handle;
         }
 
         public virtual void Unload()
         {
             if (!IsInScene)
             {
-                if (loadedAsset != null && LoadingStrategy != null)
+                if (loadedAsset != null )
                 {
-                    LoadingStrategy.Unload(handle);
+                    Unload(handle);
                     handle = null;
                 }
             }
@@ -171,5 +137,14 @@ namespace LegendaryTools.Systems.AssetProvider
             loadedAsset = asset;
             IsLoading = false;
         }
+
+        public abstract T Load<T>(object arg) where T : Object;
+        public abstract Task<ILoadOperation> LoadAsync<T>(string key, Action<object> onComplete = null) where T : Object;
+
+        public abstract ILoadOperation PrepareLoadRoutine<T>(string path, Action<object> onComplete = null)
+            where T : Object;
+        public abstract IEnumerator WaitLoadRoutine(ILoadOperation loadOperation);
+        public abstract ILoadOperation LoadWithCoroutines<T>(string path, Action<object> onComplete) where T : Object;
+        public abstract void Unload(ILoadOperation handle);
     }
 }

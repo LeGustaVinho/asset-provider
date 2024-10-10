@@ -8,7 +8,6 @@ namespace LegendaryTools.Systems.AssetProvider
     {
         bool PreLoad { get; set; }
         bool DontUnloadAfterLoad { get; set; }
-        AssetProvider LoadingStrategy { get; set; }
         string AssetReference { get; }
         bool IsInScene { get; } //Flag used to identify that this asset does not need load/unload because it is serialized in the scene
         object LoadedAsset { get; }

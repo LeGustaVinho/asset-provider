@@ -1,21 +1,14 @@
 using System;
 using System.Collections;
 using System.Threading.Tasks;
-using UnityEngine;
 using UnityEngine.AddressableAssets;
 using UnityEngine.ResourceManagement.AsyncOperations;
 
 namespace LegendaryTools.Systems.AssetProvider
 {
-    [CreateAssetMenu(menuName = "Tools/AssetProvider/AdddressableAssetProvider", order = 1)]
-    public class AdddressableAssetProvider : AssetProvider
+    public class AddressableProvider
     {
-        public override T Load<T>(object arg)
-        {
-            return null; //Sync loading is not supported by addressables
-        }
-        
-        public override async Task<ILoadOperation> LoadAsync<T>(string key, Action<object> onComplete = null)
+        public static async Task<ILoadOperation> LoadAsync<T>(string key, Action<object> onComplete = null)
         {
             if (key.Length > 0)
             {
@@ -35,7 +28,7 @@ namespace LegendaryTools.Systems.AssetProvider
             return null;
         }
         
-        public override ILoadOperation PrepareLoadRoutine<T>(string path, Action<object> onComplete = null)
+        public static ILoadOperation PrepareLoadRoutine<T>(string path, Action<object> onComplete = null)
         {
             if (path.Length > 0)
             {
@@ -49,7 +42,7 @@ namespace LegendaryTools.Systems.AssetProvider
             return null;
         }
 
-        public override IEnumerator WaitLoadRoutine(ILoadOperation loadOperation)
+        public static IEnumerator WaitLoadRoutine(ILoadOperation loadOperation)
         {
             while (!loadOperation.IsDone)
             {
@@ -57,14 +50,14 @@ namespace LegendaryTools.Systems.AssetProvider
             }
         }
 
-        public override ILoadOperation LoadWithCoroutines<T>(string path, Action<object> onComplete)
+        public static ILoadOperation LoadWithCoroutines<T>(string path, Action<object> onComplete)
         {
             ILoadOperation loadOperation = PrepareLoadRoutine<T>(path, onComplete);
             MonoBehaviourFacade.Instance.StartRoutine(WaitLoadRoutine(loadOperation));
             return loadOperation;
         }
 
-        public override void Unload(ILoadOperation handle)
+        public static void Unload(ILoadOperation handle)
         {
             handle?.Release();
         }
