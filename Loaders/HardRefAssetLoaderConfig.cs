@@ -10,38 +10,30 @@ namespace LegendaryTools.Systems.AssetProvider
     public class HardRefAssetLoaderConfig : AssetLoaderConfig
     {
         [SerializeField] protected Object HardReference;
-        
-        public override bool PreLoad => false; //Already preload by serialization
-        public override bool IsLoaded => true;
-        public override bool IsLoading => false;
-        public override bool DontUnloadAfterLoad => true;
-        public override string AssetReference { get; }
-        public override bool IsInScene => false;
-        public override object LoadedAsset => HardReference;
 
-        public override T Load<T>(object arg)
+        public override T Load<T>()
         {
             return HardReference as T;
         }
 
-        public override Task<ILoadOperation> LoadAsync<T>(string key, Action<object> onComplete = null)
+        public override Task<ILoadOperation> LoadAsync<T>(Action<T> onComplete = null)
         {
             onComplete?.Invoke(HardReference as T);
             return null;
         }
 
-        public override ILoadOperation PrepareLoadRoutine<T>(string path, Action<object> onComplete = null)
+        public override ILoadOperation PrepareLoadRoutine<T>(Action<T> onComplete = null)
         {
             onComplete?.Invoke(HardReference as T);
             return null;
         }
 
-        public override IEnumerator WaitLoadRoutine(ILoadOperation loadOperation)
+        public override IEnumerator WaitLoadRoutine()
         {
             yield return null;
         }
 
-        public override ILoadOperation LoadWithCoroutines<T>(string path, Action<object> onComplete)
+        public override ILoadOperation LoadWithCoroutines<T>(Action<T> onComplete)
         {
             onComplete?.Invoke(HardReference as T);
             return null;
@@ -49,12 +41,6 @@ namespace LegendaryTools.Systems.AssetProvider
 
         public override void Unload()
         {
-            Debug.LogWarning("Hard Reference assets cannot be released ", this);
-        }
-        
-        public override void Unload(ILoadOperation handle)
-        {
-            Debug.LogWarning("Hard Reference assets cannot be released ", this);
         }
     }
     
@@ -62,52 +48,37 @@ namespace LegendaryTools.Systems.AssetProvider
         where T : UnityEngine.Object
     {
         [SerializeField] protected T HardReference;
-        
-        public override bool PreLoad => false; //Already preload by serialization
-        public override bool IsLoaded => true;
-        public override bool IsLoading => false;
-        public override bool DontUnloadAfterLoad => true;
-        public override string AssetReference { get; }
-        public override bool IsInScene => false;
-        public override object LoadedAsset => HardReference;
-#pragma warning disable 0693
-        public override T Load<T>(object arg)
+
+        public override T1 Load<T1>()
         {
-            return HardReference as T;
+            return HardReference as T1;
         }
 
-        public override Task<ILoadOperation> LoadAsync<T>(string key, Action<object> onComplete = null)
+        public override Task<ILoadOperation> LoadAsync<T1>(Action<T1> onComplete = null)
         {
-            onComplete?.Invoke(HardReference as T);
+            onComplete?.Invoke(HardReference as T1);
             return null;
         }
 
-        public override ILoadOperation PrepareLoadRoutine<T>(string path, Action<object> onComplete = null)
+        public override ILoadOperation PrepareLoadRoutine<T1>(Action<T1> onComplete = null)
         {
-            onComplete?.Invoke(HardReference as T);
+            onComplete?.Invoke(HardReference as T1);
             return null;
         }
 
-        public override IEnumerator WaitLoadRoutine(ILoadOperation loadOperation)
+        public override IEnumerator WaitLoadRoutine()
         {
             yield return null;
         }
 
-        public override ILoadOperation LoadWithCoroutines<T>(string path, Action<object> onComplete)
+        public override ILoadOperation LoadWithCoroutines<T1>(Action<T1> onComplete)
         {
-            onComplete?.Invoke(HardReference as T);
+            onComplete?.Invoke(HardReference as T1);
             return null;
         }
-#pragma warning restore 0693
-        
+
         public override void Unload()
         {
-            Debug.LogWarning("Hard Reference assets cannot be released ", this);
-        }
-        
-        public override void Unload(ILoadOperation handle)
-        {
-            Debug.LogWarning("Hard Reference assets cannot be released ", this);
         }
     }
 }

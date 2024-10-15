@@ -6,7 +6,7 @@ using Object = UnityEngine.Object;
 
 namespace LegendaryTools.Systems.AssetProvider
 {
-    public abstract class AssetLoaderConfig : ScriptableObject, IAssetLoaderConfig, IAssetProvider
+    public abstract class AssetLoaderConfig : ScriptableObject, IAssetLoaderConfig
     {
         [SerializeField] protected bool preload;
         [SerializeField] protected bool dontUnloadAfterLoad;
@@ -22,105 +22,59 @@ namespace LegendaryTools.Systems.AssetProvider
             set => dontUnloadAfterLoad = value;
         }
         
-        public abstract string AssetReference { get; }
+#if ODIN_INSPECTOR
+        [Sirenix.OdinInspector.ShowInInspector]
+        [Sirenix.OdinInspector.HideInEditorMode]
+        [Sirenix.OdinInspector.ReadOnly]
+#endif
         public virtual object LoadedAsset => loadedAsset;
 
-        public virtual bool IsInScene { private set; get; } //Flag used to identify that this asset does not need load/unload because it is serialized in the scene
+#if ODIN_INSPECTOR
+        [Sirenix.OdinInspector.ShowInInspector]
+        [Sirenix.OdinInspector.HideInEditorMode]
+        [Sirenix.OdinInspector.ReadOnly]
+#endif
+        public virtual bool IsInScene { protected set; get; } //Flag used to identify that this asset does not need load/unload because it is serialized in the scene
 
+#if ODIN_INSPECTOR
+        [Sirenix.OdinInspector.ShowInInspector]
+        [Sirenix.OdinInspector.HideInEditorMode]
+        [Sirenix.OdinInspector.ReadOnly]
+#endif
         public virtual bool IsLoaded => loadedAsset != null;
 
-        public virtual bool IsLoading { private set; get; }
+#if ODIN_INSPECTOR
+        [Sirenix.OdinInspector.ShowInInspector]
+        [Sirenix.OdinInspector.HideInEditorMode]
+        [Sirenix.OdinInspector.ReadOnly]
+#endif
+        public virtual bool IsLoading { protected set; get; } = false;
 
-        private object loadedAsset;
-        private ILoadOperation handle;
+        protected object loadedAsset;
         
-        public T Load<T>() where T : UnityEngine.Object
-        {
-            if (IsInScene || IsLoaded)
-            {
-                return loadedAsset as T;
-            }
+#if ODIN_INSPECTOR
+        [Sirenix.OdinInspector.ShowInInspector]
+        [Sirenix.OdinInspector.HideInEditorMode]
+        [Sirenix.OdinInspector.ReadOnly]
+#endif
+        protected ILoadOperation handle;
 
-            IsLoading = true;
-            return Load<T>(AssetReference);
-        }
+        public abstract T Load<T>() where T : UnityEngine.Object;
 
-        public async Task<ILoadOperation> LoadAsync<T>(Action<object> onComplete = null)
-            where T : UnityEngine.Object
-        {
-            void DualCallback(object arg)
-            {
-                OnLoadAssetAsync(arg);
-                onComplete?.Invoke(arg);
-            }
-            
-            if (IsInScene || IsLoaded)
-            {
-                DualCallback(loadedAsset);
-            }
+        public abstract Task<ILoadOperation> LoadAsync<T>(Action<T> onComplete = null) where T : UnityEngine.Object;
 
+        public abstract ILoadOperation PrepareLoadRoutine<T>(Action<T> onComplete = null) where T : UnityEngine.Object;
 
-            IsLoading = true;
-            Task<ILoadOperation> handleTask = LoadAsync<T>(AssetReference, DualCallback);
-            handle = handleTask.Result;
-            return await handleTask;
-        }
+        public abstract IEnumerator WaitLoadRoutine();
 
-        public ILoadOperation PrepareLoadRoutine<T>(Action<object> onComplete = null)
-            where T : UnityEngine.Object
-        {
-            void DualCallback(object arg)
-            {
-                OnLoadAssetAsync(arg);
-                onComplete?.Invoke(arg);
-            }
-            
-            if (IsInScene || IsLoaded)
-            {
-                DualCallback(loadedAsset);
-                return null;
-            }
+        public abstract ILoadOperation LoadWithCoroutines<T>(Action<T> onComplete) where T : UnityEngine.Object;
 
-            IsLoading = true;
-            handle = PrepareLoadRoutine<T>(AssetReference, DualCallback);
-            return handle;
-        }
-
-        public IEnumerator WaitLoadRoutine()
-        {
-            yield return WaitLoadRoutine(handle);
-        }
-
-        public ILoadOperation LoadWithCoroutines<T>(Action<object> onComplete) where T : UnityEngine.Object
-        {
-            void DualCallback(object arg)
-            {
-                OnLoadAssetAsync(arg);
-                onComplete?.Invoke(arg);
-            }
-            
-            if (IsInScene || IsLoaded)
-            {
-                DualCallback(loadedAsset);
-                return null;
-            }
-            
-            IsLoading = true;
-            handle = LoadWithCoroutines<T>(AssetReference, DualCallback);
-            return handle;
-        }
-
-        public virtual void Unload()
-        {
-            if (!IsInScene)
-            {
-                if (loadedAsset != null )
-                {
-                    Unload(handle);
-                    handle = null;
-                }
-            }
-        }
+#if ODIN_INSPECTOR
+        [Sirenix.OdinInspector.ShowInInspector]
+        [Sirenix.OdinInspector.HideInEditorMode]
+        [Sirenix.OdinInspector.Button]
+#endif
+        public abstract void Unload();
 
         public void SetAsSceneAsset(Object sceneInstanceInScene)
         {
@@ -137,14 +91,5 @@ namespace LegendaryTools.Systems.AssetProvider
             loadedAsset = asset;
             IsLoading = false;
         }
-
-        public abstract T Load<T>(object arg) where T : Object;
-        public abstract Task<ILoadOperation> LoadAsync<T>(string key, Action<object> onComplete = null) where T : Object;
-
-        public abstract ILoadOperation PrepareLoadRoutine<T>(string path, Action<object> onComplete = null)
-            where T : Object;
-        public abstract IEnumerator WaitLoadRoutine(ILoadOperation loadOperation);
-        public abstract ILoadOperation LoadWithCoroutines<T>(string path, Action<object> onComplete) where T : Object;
-        public abstract void Unload(ILoadOperation handle);
     }
 }

@@ -9,68 +9,104 @@ namespace LegendaryTools.Systems.AssetProvider
     public class ResourcesAssetLoaderConfig : AssetLoaderConfig
     {
         [SerializeField] protected ResourcePathReference ResourcePathReference;
-
-        public override string AssetReference => ResourcePathReference.resourcePath;
-
-        public override T Load<T>(object arg)
+        
+        public override T Load<T>()
         {
-            string path = (string)arg;
-            if (path.Length > 0)
+            if (IsLoaded || IsInScene)
+                return loadedAsset as T;
+            
+            if (ResourcePathReference.resourcePath.Length > 0)
             {
-                return Resources.Load<T>(path);
+                T result = Resources.Load<T>(ResourcePathReference.resourcePath);
+                loadedAsset = result;
+                return result;
             }
-
             return null;
         }
 
-        public override async Task<ILoadOperation> LoadAsync<T>(string path, Action<object> onComplete = null)
+        public override async Task<ILoadOperation> LoadAsync<T>(Action<T> onComplete = null)
         {
-            if (path.Length > 0)
+            if (IsLoaded || IsInScene)
             {
-                ResourceRequest resourcesRequest = Resources.LoadAsync<T>(path);
-                ILoadOperation loadOperation = new LoadOperation(resourcesRequest);
-                if(onComplete != null)
-                    loadOperation.OnCompleted += onComplete;
+                onComplete?.Invoke(loadedAsset as T);
+                return handle;
+            }
+            
+            if (ResourcePathReference.resourcePath.Length > 0)
+            {
+                IsLoading = true;
+                ResourceRequest resourcesRequest = Resources.LoadAsync<T>(ResourcePathReference.resourcePath);
+                handle = new LoadOperation(resourcesRequest);
+                if(onComplete != null) handle.OnCompleted += OnResourceLoadCompleted;
 
-                while (!loadOperation.IsDone)
+                while (!handle.IsDone)
                 {
                     await Task.Delay(25);
                 }
-                
-                return loadOperation;
+
+                loadedAsset = handle.Result;
+                IsLoading = false;
+                return handle;
             }
 
             return null;
+            void OnResourceLoadCompleted(object obj)
+            {
+                onComplete?.Invoke(obj as T);
+            }
         }
 
-        public override ILoadOperation PrepareLoadRoutine<T>(string path, Action<object> onComplete = null)
+        public override ILoadOperation PrepareLoadRoutine<T>(Action<T> onComplete = null)
         {
-            ResourceRequest resourcesRequest = Resources.LoadAsync<T>(path);
-            ILoadOperation loadOperation = new LoadOperation(resourcesRequest);
-            if(onComplete != null)
-                loadOperation.OnCompleted += onComplete;
+            if (IsLoaded || IsInScene)
+            {
+                onComplete?.Invoke(loadedAsset as T);
+                return handle;
+            }
             
-            return loadOperation;
+            IsLoading = true;
+            ResourceRequest resourcesRequest = Resources.LoadAsync<T>(ResourcePathReference.resourcePath);
+            handle = new LoadOperation(resourcesRequest);
+            handle.OnCompleted += OnResourceLoadCompleted;
+            return handle;
+            void OnResourceLoadCompleted(object obj)
+            {
+                loadedAsset = handle.Result;
+                IsLoading = false;
+                onComplete?.Invoke(obj as T);
+            }
         }
 
-        public override IEnumerator WaitLoadRoutine(ILoadOperation loadOperation)
+        public override IEnumerator WaitLoadRoutine()
         {
-            while (!loadOperation.IsDone)
+            if (handle == null)
+            {
+                Debug.LogError($"[{nameof(ResourcesAssetLoaderConfig)}:{nameof(WaitLoadRoutine)}] Handle is null, did you forget to call {nameof(PrepareLoadRoutine)}() ?");
+                yield return null;
+            }
+            
+            while (!handle.IsDone)
             {
                 yield return null;
             }
         }
 
-        public override ILoadOperation LoadWithCoroutines<T>(string path, Action<object> onComplete)
+        public override ILoadOperation LoadWithCoroutines<T>(Action<T> onComplete)
         {
-            ILoadOperation loadOperation = PrepareLoadRoutine<T>(path, onComplete);
-            MonoBehaviourFacade.Instance.StartRoutine(WaitLoadRoutine(loadOperation));
+            ILoadOperation loadOperation = PrepareLoadRoutine<T>(onComplete);
+            MonoBehaviourFacade.Instance.StartRoutine(WaitLoadRoutine());
             return loadOperation;
         }
 
-        public override void Unload(ILoadOperation handle)
+        public override void Unload()
         {
+            if (IsInScene) return;
+            if (handle == null) return;
+            
+            loadedAsset = null;
             handle?.Release();
+            handle = null;
+            IsLoading = false;
         }
     }
 }

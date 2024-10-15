@@ -3,6 +3,7 @@ using UnityEngine.AddressableAssets;
 using System;
 using System.Collections;
 using System.Threading.Tasks;
+using UnityEngine.ResourceManagement.AsyncOperations;
 
 namespace LegendaryTools.Systems.AssetProvider
 {
@@ -11,35 +12,86 @@ namespace LegendaryTools.Systems.AssetProvider
     {
         [SerializeField] protected AssetReference assetReference;
         
-        public override string AssetReference => assetReference.RuntimeKey as string;
-        public override T Load<T>(object arg)
+        public override T Load<T>()
         {
             throw new NotSupportedException();
         }
 
-        public override Task<ILoadOperation> LoadAsync<T>(string key, Action<object> onComplete = null)
+        public override async Task<ILoadOperation> LoadAsync<T>(Action<T> onComplete = null)
         {
-            return AddressableProvider.LoadAsync<T>(key, onComplete);
+            if (IsLoaded || IsInScene)
+            {
+                onComplete?.Invoke(loadedAsset as T);
+                return handle;
+            }
+            
+            IsLoading = true;
+            AsyncOperationHandle<T> request = assetReference.LoadAssetAsync<T>();
+            handle = new LoadOperation(request);
+            if(onComplete != null) handle.OnCompleted += OnAddressableLoadCompleted;
+            
+            while (!handle.IsDone) await Task.Delay(25);
+            
+            loadedAsset = handle.Result;
+            IsLoading = false;
+            return handle;
+            
+            void OnAddressableLoadCompleted(object obj)
+            {
+                handle.OnCompleted -= OnAddressableLoadCompleted;
+                onComplete?.Invoke(obj as T);
+            }
+        }
+        public override ILoadOperation PrepareLoadRoutine<T>(Action<T> onComplete = null)
+        {
+            if (IsLoaded || IsInScene)
+            {
+                onComplete?.Invoke(loadedAsset as T);
+                return handle;
+            }
+            
+            IsLoading = true;
+            AsyncOperationHandle<T> request = assetReference.LoadAssetAsync<T>();
+            handle = new LoadOperation(request);
+            handle.OnCompleted += OnAddressableLoadCompleted;
+            return handle;
+            
+            void OnAddressableLoadCompleted(object obj)
+            {
+                handle.OnCompleted -= OnAddressableLoadCompleted;
+                loadedAsset = handle.Result;
+                IsLoading = false;
+                onComplete?.Invoke(obj as T);
+            }
         }
 
-        public override ILoadOperation PrepareLoadRoutine<T>(string path, Action<object> onComplete = null)
+        public override IEnumerator WaitLoadRoutine()
         {
-            return AddressableProvider.PrepareLoadRoutine<T>(path, onComplete);
+            if (handle == null)
+            {
+                Debug.LogError($"[{nameof(AddressablesAssetLoaderConfig)}:{nameof(WaitLoadRoutine)}] Handle is null, did you forget to call {nameof(PrepareLoadRoutine)}() ?");
+                yield return null;
+            }
+            
+            while (!handle.IsDone) yield return null;
         }
 
-        public override IEnumerator WaitLoadRoutine(ILoadOperation loadOperation)
+        public override ILoadOperation LoadWithCoroutines<T>(Action<T> onComplete)
         {
-            return AddressableProvider.WaitLoadRoutine(loadOperation);
+            ILoadOperation loadOperation = PrepareLoadRoutine<T>(onComplete);
+            MonoBehaviourFacade.Instance.StartRoutine(WaitLoadRoutine());
+            return loadOperation;
         }
 
-        public override ILoadOperation LoadWithCoroutines<T>(string path, Action<object> onComplete)
+        public override void Unload()
         {
-            return AddressableProvider.LoadWithCoroutines<T>(path, onComplete);
-        }
-
-        public override void Unload(ILoadOperation handle)
-        {
-            AddressableProvider.Unload(handle);
+            if (IsInScene) return;
+            if (handle == null) return;
+            
+            handle.Release();
+            loadedAsset = null;
+            handle = null;
+            IsLoading = false;
         }
     }
     
@@ -48,37 +100,87 @@ namespace LegendaryTools.Systems.AssetProvider
     {
         [SerializeField] protected AssetReferenceT<T> assetReference;
         
-        public override string AssetReference => assetReference.RuntimeKey as string;
-#pragma warning disable 0693
-        public override T Load<T>(object arg)
+        public override T1 Load<T1>()
         {
             throw new NotSupportedException();
         }
 
-        public override Task<ILoadOperation> LoadAsync<T>(string key, Action<object> onComplete = null)
+        public override async Task<ILoadOperation> LoadAsync<T1>(Action<T1> onComplete = null)
         {
-            return AddressableProvider.LoadAsync<T>(key, onComplete);
+            if (IsLoaded || IsInScene)
+            {
+                onComplete?.Invoke(loadedAsset as T1);
+                return handle;
+            }
+            
+            IsLoading = true;
+            AsyncOperationHandle<T> request = assetReference.LoadAssetAsync<T>();
+            handle = new LoadOperation(request);
+            if(onComplete != null) handle.OnCompleted += OnAddressableLoadCompleted;
+            
+            while (!handle.IsDone) await Task.Delay(25);
+            
+            loadedAsset = handle.Result;
+            IsLoading = false;
+            return handle;
+            
+            void OnAddressableLoadCompleted(object obj)
+            {
+                handle.OnCompleted -= OnAddressableLoadCompleted;
+                onComplete?.Invoke(obj as T1);
+            }
         }
 
-        public override ILoadOperation PrepareLoadRoutine<T>(string path, Action<object> onComplete = null)
+        public override ILoadOperation PrepareLoadRoutine<T1>(Action<T1> onComplete = null)
         {
-            return AddressableProvider.PrepareLoadRoutine<T>(path, onComplete);
+            if (IsLoaded || IsInScene)
+            {
+                onComplete?.Invoke(loadedAsset as T1);
+                return handle;
+            }
+            
+            IsLoading = true;
+            AsyncOperationHandle<T> request = assetReference.LoadAssetAsync<T>();
+            handle = new LoadOperation(request);
+            handle.OnCompleted += OnAddressableLoadCompleted;
+            return handle;
+            
+            void OnAddressableLoadCompleted(object obj)
+            {
+                handle.OnCompleted -= OnAddressableLoadCompleted;
+                loadedAsset = handle.Result;
+                IsLoading = false;
+                onComplete?.Invoke(obj as T1);
+            }
         }
 
-        public override IEnumerator WaitLoadRoutine(ILoadOperation loadOperation)
+        public override IEnumerator WaitLoadRoutine()
         {
-            return AddressableProvider.WaitLoadRoutine(loadOperation);
+            if (handle == null)
+            {
+                Debug.LogError($"[{nameof(AddressablesAssetLoaderConfig)}:{nameof(WaitLoadRoutine)}] Handle is null, did you forget to call {nameof(PrepareLoadRoutine)}() ?");
+                yield return null;
+            }
+            
+            while (!handle.IsDone) yield return null;
         }
 
-        public override ILoadOperation LoadWithCoroutines<T>(string path, Action<object> onComplete)
+        public override ILoadOperation LoadWithCoroutines<T1>(Action<T1> onComplete)
         {
-            return AddressableProvider.LoadWithCoroutines<T>(path, onComplete);
+            ILoadOperation loadOperation = PrepareLoadRoutine<T1>(onComplete);
+            MonoBehaviourFacade.Instance.StartRoutine(WaitLoadRoutine());
+            return loadOperation;
         }
-#pragma warning restore 0693
 
-        public override void Unload(ILoadOperation handle)
+        public override void Unload()
         {
-            AddressableProvider.Unload(handle);
+            if (IsInScene) return;
+            if (handle == null) return;
+            
+            loadedAsset = null;
+            handle.Release();
+            handle = null;
+            IsLoading = false;
         }
     }
 }
